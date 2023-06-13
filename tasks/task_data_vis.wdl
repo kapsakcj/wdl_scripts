@@ -9,6 +9,7 @@ task cluster_render {
     String    facility=""
     String    timezone="America/New_York"
     File?     render_template
+    String    docker = "quay.io/wslh-bioinformatics/ar-report:1.0.0"
   }
 
   command <<<
@@ -25,10 +26,15 @@ task cluster_render {
     sed -i "s/Genomic\ Analysis/~{facility}\ Genomic\ Analysis/" render_template.Rmd
     grep "Genomic Analysis" render_template.Rmd
  
+    apt-get update && apt-get install -y texlive-xetex texlive-latex-extra texlive-fonts-recommended
+
     R --no-save <<CODE
 
     library(rmarkdown)
     library(tools)
+
+    install.packages("phytools",repos="https://cloud.r-project.org",quiet=TRUE)
+    install.packages("viridis",repos="https://cloud.r-project.org",quiet=TRUE) 
 
     snp_mat <- read.table("snp_matrix.tsv", header = T, check.names = FALSE, sep = "\t", row.names = 1)
     nwk <- "ml_tree.tree"
@@ -60,7 +66,7 @@ task cluster_render {
   }
 
   runtime {
-    docker:       "quay.io/wslh-bioinformatics/ar-report:1.0.0"
+    docker:       docker
     memory:       "2 GB"
     cpu:          2
     disks:        "local-disk 100 SSD"
